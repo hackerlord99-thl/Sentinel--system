@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel // Real-Time Endpoint Detection & Response</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- LOGIN SCREEN -->
+  <section id="login" class="login-screen">
+    <div class="login-backdrop"></div>
+    <div class="login-card">
+      <div class="brand-header">
+        <div class="brand-logo">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div>
+          <h2>SENTINEL // CONSOLE</h2>
+          <span class="sub-label">Real Host EDR Sensor & Threat Detection Engine</span>
+        </div>
+      </div>
+
+      <form id="loginForm" class="login-form">
+        <div class="form-group">
+          <label for="user">Analyst Username</label>
+          <div class="input-wrap">
+            <input id="user" autocomplete="username" value="admin" required spellcheck="false">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="pass">Security Credential</label>
+          <div class="input-wrap">
+            <input id="pass" type="password" autocomplete="current-password" value="admin123" required>
+          </div>
+        </div>
+
+        <div id="loginErr" class="form-error" role="alert"></div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          <span>Authenticate & Access Console</span>
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+
+        <div class="demo-creds">
+          <span class="cred-title">Access Roles:</span>
+          <div class="cred-chips">
+            <button type="button" class="cred-chip" onclick="fillCreds('admin', 'admin123')">
+              <strong>Admin:</strong> admin / admin123
+            </button>
+            <button type="button" class="cred-chip" onclick="fillCreds('analyst', 'analyst123')">
+              <strong>Analyst:</strong> analyst / analyst123
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- MAIN APPLICATION SHELL -->
+  <div id="app" class="app-layout" hidden>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo-small">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <path d="M9 12l2 2 4-4"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">SENTINEL</span>
+          <span class="brand-tag">EDR & HOST SENSOR</span>
+        </div>
+      </div>
+
+      <nav id="nav" class="nav-menu">
+        <div class="nav-section-label">OPERATIONS & SOC</div>
+        <button data-tab="overview" class="nav-item on">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>SOC Overview</span>
+        </button>
+        <button data-tab="alerts" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Detections & Alerts</span>
+          <span id="badgeAlerts" class="nav-badge">0</span>
+        </button>
+        <button data-tab="devices" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Fleet & Endpoints</span>
+          <span id="badgeDevices" class="nav-badge count">0</span>
+        </button>
+        <button data-tab="events" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Live Telemetry Stream</span>
+          <span class="live-dot-mini"></span>
+        </button>
+
+        <div class="nav-section-label">REAL HOST SENSORS & EDR</div>
+        <button data-tab="processes" class="nav-item highlight-nav">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg>
+          <span>Live Host Processes</span>
+          <span class="nav-badge live-tag">LIVE</span>
+        </button>
+        <button data-tab="network" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span>Sockets & Ports</span>
+        </button>
+        <button data-tab="filescan" class="nav-item highlight-nav">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+          <span>File Scanner & Canary</span>
+          <span class="nav-badge live-tag">EDR</span>
+        </button>
+
+        <div class="nav-section-label">THREAT INTEL & LAB</div>
+        <button data-tab="simulator" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          <span>Threat Simulator</span>
+        </button>
+        <button data-tab="urlscan" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span>Threat-Intel Scanner</span>
+        </button>
+        <button data-tab="rules" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <span>Detection Rules</span>
+        </button>
+        <button data-tab="audit" id="auditTab" class="nav-item">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span>SOC Audit Log</span>
+        </button>
+      </nav>
+
+      <!-- USER PROFILE FOOTER -->
+      <div class="sidebar-user">
+        <div class="user-avatar" id="userInitial">A</div>
+        <div class="user-meta">
+          <div class="user-name" id="userName">SecOps Admin</div>
+          <div class="user-role" id="userRole">admin</div>
+        </div>
+        <button id="logout" class="btn-logout" title="Sign out" aria-label="Sign out">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT VIEWPORT -->
+    <div class="main-viewport">
+      
+      <!-- TOP STATUS BAR -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <div id="defconPill" class="defcon-pill defcon-normal">
+            <span class="defcon-pulse"></span>
+            <span id="defconText">DEFCON 4 // NORMAL</span>
+          </div>
+          <div class="telemetry-pill">
+            <span class="telemetry-dot"></span>
+            <span>HOST SENSOR: <strong id="topHostId">ONLINE</strong> &bull; <strong id="epsVal">1.2</strong> EPS</span>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- QUICK REAL CANARY DROP TRIGGER -->
+          <button class="btn btn-xs btn-outline-cyan" onclick="testCanaryDrop('high_entropy')" title="Drop real 32KB random high-entropy payload into monitored canary folder">
+            <span>⚡ Drop High-Entropy Canary</span>
+          </button>
+          <button class="btn btn-xs btn-outline-crimson" onclick="quickSim('ransomware')" title="Simulate Ransomware Mass File Encryption">
+            <span>☣ Ransomware Test</span>
+          </button>
+
+          <!-- AUDIO TOGGLE -->
+          <button id="soundToggle" class="btn btn-icon" title="Toggle Alert Audio Chime" onclick="toggleAudio()">
+            <svg id="soundIconOn" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            <svg id="soundIconOff" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- TOAST NOTIFICATIONS -->
+      <div id="toast" class="toast" role="status"></div>
+
+      <!-- MAIN PANELS -->
+      <main class="content-body">
+
+        <!-- ==================== TAB 1: SOC OVERVIEW ==================== -->
+        <section data-panel="overview" class="active-panel">
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Security Operations Center // Live Overview</h1>
+              <p class="panel-subtitle">Real host sensor telemetry, live process tracking, and heuristic intrusion detection.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-secondary" onclick="refresh()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Synchronize</span>
+              </button>
+              <button class="btn btn-danger" onclick="resolveAllAlerts()">Resolve All Active Alerts</button>
+            </div>
+          </div>
+
+          <!-- REAL LOCAL HOST BANNER -->
+          <div class="real-host-banner" id="realHostBanner">
+            <div class="rh-badge">REAL LOCAL HOST SENSOR</div>
+            <div class="rh-details">
+              <div>
+                <span class="rh-label">HOSTNAME</span>
+                <strong class="mono text-cyan" id="rhName">DESKTOP-U4IV7IO</strong>
+              </div>
+              <div>
+                <span class="rh-label">OPERATING SYSTEM</span>
+                <span id="rhOs">Microsoft Windows 11</span>
+              </div>
+              <div>
+                <span class="rh-label">IP ADDRESS</span>
+                <span class="mono" id="rhIp">127.0.0.1</span>
+              </div>
+              <div>
+                <span class="rh-label">REAL CPU LOAD</span>
+                <span id="rhCpuBadge" class="badge badge-success">0%</span>
+              </div>
+              <div>
+                <span class="rh-label">REAL MEMORY LOAD</span>
+                <span id="rhMemBadge" class="badge badge-success">0%</span>
+              </div>
+            </div>
+            <div class="rh-actions">
+              <button class="btn btn-xs btn-primary" onclick="switchTab('processes')">Inspect Processes &rarr;</button>
+              <button class="btn btn-xs btn-outline" onclick="switchTab('filescan')">Canary Trap &rarr;</button>
+            </div>
+          </div>
+
+          <!-- KEY SOC METRICS -->
+          <div class="metrics-grid" id="statsGrid">
+            <div class="metric-card" id="cardEndpoints">
+              <div class="metric-head">
+                <span class="metric-title">MONITORED FLEET ENDPOINTS</span>
+                <span class="metric-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                </span>
+              </div>
+              <div class="metric-val" id="valDevices">0</div>
+              <div class="metric-foot">
+                <span class="badge badge-success" id="valProtected">0 Healthy</span>
+                <span class="badge badge-crimson" id="valIsolated">0 Quarantined</span>
+              </div>
+            </div>
+
+            <div class="metric-card card-alert" id="cardAlerts">
+              <div class="metric-head">
+                <span class="metric-title">ACTIVE THREAT DETECTIONS</span>
+                <span class="metric-icon text-crimson">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                </span>
+              </div>
+              <div class="metric-val text-crimson" id="valOpenAlerts">0</div>
+              <div class="metric-foot">
+                <span class="badge badge-crimson" id="valCritCount">0 Critical</span>
+                <span class="badge badge-orange" id="valHighCount">0 High</span>
+                <span class="badge badge-yellow" id="valMedCount">0 Medium</span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-head">
+                <span class="metric-title">TOTAL TELEMETRY EVENTS</span>
+                <span class="metric-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                </span>
+              </div>
+              <div class="metric-val" id="valEvents">0</div>
+              <div class="metric-foot">
+                <span class="text-muted">Storage: <strong class="text-cyan">sentinel_db.json (Persistent)</strong></span>
+              </div>
+            </div>
+
+            <div class="metric-card">
+              <div class="metric-head">
+                <span class="metric-title">DETECTION RULES ACTIVE</span>
+                <span class="metric-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+              </div>
+              <div class="metric-val" id="valRulesActive">0</div>
+              <div class="metric-foot">
+                <span class="text-success">Engine: Sigma / YARA / Heuristics</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REAL-TIME ATTACK & TELEMETRY TIMELINE CHART -->
+          <div class="chart-container-card">
+            <div class="chart-header">
+              <div class="chart-title-wrap">
+                <h3>Real-Time Telemetry & Threat Influx (Live 60-Second Window)</h3>
+                <span class="chart-sub">Streaming Ingested Events (Cyan) vs Threat Triggers (Crimson spikes)</span>
+              </div>
+              <div class="chart-legend">
+                <span class="legend-item"><span class="legend-dot cyan-dot"></span> Ingestion Stream</span>
+                <span class="legend-item"><span class="legend-dot crimson-dot"></span> Threat Hits</span>
+              </div>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="liveChart" height="130"></canvas>
+            </div>
+          </div>
+
+          <!-- TWO-COLUMN SECTION: RECENT CRITICAL INCIDENTS & FLEET HEALTH -->
+          <div class="overview-grid">
+            <div class="overview-col">
+              <div class="section-card-header">
+                <h3>Latest High-Priority Detections</h3>
+                <button class="btn btn-xs btn-outline" onclick="switchTab('alerts')">View All Alerts &rarr;</button>
+              </div>
+              <div id="ovAlerts" class="alert-stack"></div>
+            </div>
+
+            <div class="overview-col">
+              <div class="section-card-header">
+                <h3>Monitored Host Fleet Status</h3>
+                <button class="btn btn-xs btn-outline" onclick="switchTab('devices')">Manage Fleet &rarr;</button>
+              </div>
+              <div id="ovDevices" class="device-mini-grid"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== NEW TAB: REAL LIVE PROCESSES ==================== -->
+        <section data-panel="processes" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Live Host Processes (Task Manager & EDR)</h1>
+              <p class="panel-subtitle">Real running processes queried directly from this Windows host with memory usage and process termination.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-secondary" onclick="loadRealProcesses()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Refresh Processes</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="processSearch" placeholder="Filter processes by name, PID, or path..." oninput="filterProcessTable()">
+            </div>
+            <div class="filter-group">
+              <span class="text-muted" style="align-self:center;" id="procCountLabel">Loading processes...</span>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table mono" id="processTable">
+              <thead>
+                <tr>
+                  <th>PID</th>
+                  <th>Process Name</th>
+                  <th>RAM Usage</th>
+                  <th>Executable Path</th>
+                  <th>Security Flags</th>
+                  <th>EDR Action</th>
+                </tr>
+              </thead>
+              <tbody id="processTableBody">
+                <tr><td colspan="6" style="text-align:center; padding:24px;">Querying Windows host processes...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================== NEW TAB: REAL SOCKETS & PORTS ==================== -->
+        <section data-panel="network" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Active Sockets & Network Connections</h1>
+              <p class="panel-subtitle">Live TCP network sockets, listening ports, and remote connections active on this Windows host.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-secondary" onclick="loadRealConnections()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                <span>Refresh Sockets</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table mono" id="connTable">
+              <thead>
+                <tr>
+                  <th>State</th>
+                  <th>Local Address : Port</th>
+                  <th>Remote Address : Port</th>
+                  <th>Owning PID</th>
+                </tr>
+              </thead>
+              <tbody id="connTableBody">
+                <tr><td colspan="4" style="text-align:center; padding:24px;">Querying active TCP connections...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ==================== NEW TAB: REAL FILE SCANNER & CANARY TRAP ==================== -->
+        <section data-panel="filescan" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Deep File Inspector & Canary Directory Trap</h1>
+              <p class="panel-subtitle">Calculate real Shannon entropy, compute SHA-256 cryptographic hashes, isolate files to quarantine vault, and monitor canary trap.</p>
+            </div>
+          </div>
+
+          <div class="filescan-layout">
+            
+            <!-- SECTION 1: SCAN ANY FILE ON HOST -->
+            <div class="filescan-card">
+              <h3>🔍 Local File Deep Inspection & Entropy Analyzer</h3>
+              <p>Provide the path of any file on your computer to calculate real Shannon entropy, detect packed binaries, and compute cryptographic hashes.</p>
+              
+              <form id="fileScanForm" class="filescan-form">
+                <div class="form-group">
+                  <label>Full File Path on Host</label>
+                  <div class="input-with-button">
+                    <input id="fileScanInput" placeholder="C:\Windows\System32\cmd.exe or C:\path\to\file.exe" value="C:\Windows\System32\cmd.exe" required spellcheck="false">
+                    <button type="submit" class="btn btn-primary">Inspect File</button>
+                  </div>
+                </div>
+              </form>
+
+              <div id="fileScanResult" class="file-result-wrap" style="display:none;"></div>
+            </div>
+
+            <!-- SECTION 2: CANARY TRAP DIRECTORY SENSOR -->
+            <div class="filescan-card">
+              <div class="section-badge-row">
+                <span class="badge badge-success">24/7 ACTIVE BACKGROUND WATCHER</span>
+              </div>
+              <h3>🪤 Canary Trap Directory Sensor</h3>
+              <p>Sentinel monitors the local folder <code class="mono text-cyan" id="canaryFolderPath">./canary_trap</code> in real time. Any file dropped, written, or renamed inside this folder is immediately analyzed for entropy, format, and ransomware rename bursts.</p>
+
+              <div class="canary-trigger-box">
+                <div class="canary-trigger-info">
+                  <h4>Test Canary Drop Sensor Live:</h4>
+                  <p class="text-muted">Click below to generate a real 32 KB high-entropy random binary file or a ransomware pattern file in the canary folder.</p>
+                </div>
+                <div class="canary-btns">
+                  <button class="btn btn-primary" onclick="testCanaryDrop('high_entropy')">
+                    Drop High-Entropy Binary (Entropy ~ 7.95)
+                  </button>
+                  <button class="btn btn-danger" onclick="testCanaryDrop('ransomware')">
+                    Drop Ransomware .locked File
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ==================== TAB 2: DETECTIONS & INCIDENTS ==================== -->
+        <section data-panel="alerts" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Detection Incidents & Alerts</h1>
+              <p class="panel-subtitle">Filter, investigate evidence payloads, examine process trees, and remediate threats.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-secondary" onclick="exportAlerts()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Export JSON</span>
+              </button>
+              <button class="btn btn-danger" onclick="resolveAllAlerts()">Resolve All Open</button>
+            </div>
+          </div>
+
+          <!-- FILTERS BAR -->
+          <div class="filter-bar">
+            <div class="search-input-wrap">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input id="alertSearch" placeholder="Search rules, hosts, MITRE IDs, or hashes..." oninput="filterAlertsList()">
+            </div>
+            <div class="filter-group">
+              <select id="severityFilter" onchange="filterAlertsList()">
+                <option value="all">All Severities</option>
+                <option value="critical">Critical Only</option>
+                <option value="high">High Only</option>
+                <option value="medium">Medium Only</option>
+              </select>
+              <select id="statusFilter" onchange="filterAlertsList()">
+                <option value="all">All Statuses</option>
+                <option value="open" selected>Open Only</option>
+                <option value="resolved">Resolved Only</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ALERTS LIST -->
+          <div id="alerts" class="alert-list"></div>
+        </section>
+
+        <!-- ==================== TAB 3: FLEET & ENDPOINTS ==================== -->
+        <section data-panel="devices" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Monitored Fleet & Host Agents</h1>
+              <p class="panel-subtitle">Endpoint health, live resource telemetry, and network isolation quarantine controls.</p>
+            </div>
+          </div>
+          <div id="devices" class="device-full-grid"></div>
+        </section>
+
+        <!-- ==================== TAB 4: LIVE TELEMETRY STREAM ==================== -->
+        <section data-panel="events" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Real-Time EDR Telemetry Stream</h1>
+              <p class="panel-subtitle">Raw endpoint activity ingestion buffer (Processes, Network Sockets, File I/O, Registry Keys).</p>
+            </div>
+            <div class="header-actions">
+              <button id="pauseStreamBtn" class="btn btn-secondary" onclick="toggleStreamPause()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                <span id="pauseStreamText">Pause Stream</span>
+              </button>
+              <button class="btn btn-secondary" onclick="clearLiveEvents()">Clear Buffer</button>
+            </div>
+          </div>
+
+          <!-- STREAM TOOLBAR -->
+          <div class="stream-toolbar">
+            <div class="stream-filters" id="streamFilters">
+              <button class="filter-pill on" data-type="all" onclick="filterStream('all')">All Telemetry</button>
+              <button class="filter-pill" data-type="process" onclick="filterStream('process')">Processes</button>
+              <button class="filter-pill" data-type="network" onclick="filterStream('network')">Network Sockets</button>
+              <button class="filter-pill" data-type="file" onclick="filterStream('file')">File I/O</button>
+              <button class="filter-pill" data-type="registry" onclick="filterStream('registry')">Registry</button>
+            </div>
+            <div class="search-input-wrap stream-search">
+              <input id="eventSearch" placeholder="Filter by host, executable, IP, domain..." oninput="filterStreamDisplay()">
+            </div>
+          </div>
+
+          <!-- TERMINAL STREAM LOG -->
+          <div id="eventsLog" class="terminal-container">
+            <div class="terminal-header">
+              <div class="terminal-dots">
+                <span class="t-dot red"></span>
+                <span class="t-dot yellow"></span>
+                <span class="t-dot green"></span>
+              </div>
+              <span class="terminal-title">ENDPOINT_INGEST_SOCKET // live_events.log</span>
+              <span class="terminal-status"><span class="pulse-green"></span> STREAMING</span>
+            </div>
+            <div id="events" class="terminal-body mono"></div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 5: THREAT SIMULATOR LAB ==================== -->
+        <section data-panel="simulator" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Threat Simulation & Attack Sandbox</h1>
+              <p class="panel-subtitle">Trigger synthetic attack vectors to demonstrate detection rules, alerts, and quarantine response.</p>
+            </div>
+          </div>
+
+          <div class="simulator-layout">
+            <div class="sim-host-select-card">
+              <div class="form-group">
+                <label for="simTargetDevice">Target Host for Simulation:</label>
+                <select id="simTargetDevice" class="form-select">
+                  <option value="LOCAL_HOST">This Host (DESKTOP-U4IV7IO)</option>
+                  <option value="WIN-0142">WIN-0142 (Finance-Workstation-01)</option>
+                  <option value="SRV-DC01">SRV-DC01 (Primary-Domain-Controller)</option>
+                  <option value="MAC-0077">MAC-0077 (Design-MacBook-Pro)</option>
+                  <option value="LNX-K8S2">LNX-K8S2 (Prod-Kubernetes-Worker-02)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- SIMULATION CARDS GRID -->
+            <div class="sim-scenarios-grid">
+              
+              <!-- SCENARIO 1: MACRO -->
+              <div class="sim-card">
+                <div class="sim-card-badge text-high">T1059.001 - HIGH SEVERITY</div>
+                <h3>Office Macro PowerShell Spawn</h3>
+                <p>Simulates a malicious Word/Excel document executing an obfuscated PowerShell reverse-shell cradle in hidden window.</p>
+                <div class="sim-code-preview mono">WINWORD.EXE &rarr; powershell.exe -NoP -W Hidden -Enc...</div>
+                <button class="btn btn-primary btn-block" onclick="runSimulation('macro')">
+                  <span>Simulate Macro Execution</span>
+                </button>
+              </div>
+
+              <!-- SCENARIO 2: RANSOMWARE -->
+              <div class="sim-card card-border-crimson">
+                <div class="sim-card-badge text-crimson">T1486 - CRITICAL SEVERITY</div>
+                <h3>Ransomware Bulk Encryption Burst</h3>
+                <p>Simulates rapid bulk file rename operations and entropy spikes appending <code>.locked</code> extensions across user directories.</p>
+                <div class="sim-code-preview mono">174 renames/sec &bull; Entropy 7.92 &bull; *.locked</div>
+                <button class="btn btn-danger btn-block" onclick="runSimulation('ransomware')">
+                  <span>Simulate Ransomware Burst</span>
+                </button>
+              </div>
+
+              <!-- SCENARIO 3: C2 BEACON -->
+              <div class="sim-card card-border-crimson">
+                <div class="sim-card-badge text-crimson">T1071.001 - CRITICAL SEVERITY</div>
+                <h3>C2 Network Beacon to IOC Domain</h3>
+                <p>Simulates outbound network communication to known Command & Control infrastructure (threat-intel blocklisted host).</p>
+                <div class="sim-code-preview mono">CONNECT c2-beacon.darknet-node.example:443 (HTTPS)</div>
+                <button class="btn btn-danger btn-block" onclick="runSimulation('c2')">
+                  <span>Simulate C2 Beacon</span>
+                </button>
+              </div>
+
+              <!-- SCENARIO 4: LSASS DUMP -->
+              <div class="sim-card card-border-crimson">
+                <div class="sim-card-badge text-crimson">T1003.001 - CRITICAL SEVERITY</div>
+                <h3>Credential Dumping (LSASS Memory)</h3>
+                <p>Simulates process memory dump invocation targeted at Local Security Authority Subsystem Service (LSASS) via comsvcs.dll.</p>
+                <div class="sim-code-preview mono">rundll32.exe comsvcs.dll, MiniDump lsass.dmp full</div>
+                <button class="btn btn-danger btn-block" onclick="runSimulation('lsass')">
+                  <span>Simulate LSASS Dump</span>
+                </button>
+              </div>
+
+              <!-- SCENARIO 5: PACKED DROPPER -->
+              <div class="sim-card">
+                <div class="sim-card-badge text-yellow">T1027 - MEDIUM SEVERITY</div>
+                <h3>Suspicious High-Entropy Dropper</h3>
+                <p>Simulates file drop into AppData/Temp with entropy calculated above 7.95, indicating packed or encrypted payload.</p>
+                <div class="sim-code-preview mono">update_payload.bin &bull; Entropy 7.98 (Packed)</div>
+                <button class="btn btn-warning btn-block" onclick="runSimulation('entropy')">
+                  <span>Simulate Packed Dropper</span>
+                </button>
+              </div>
+
+              <!-- SCENARIO 6: PERSISTENCE -->
+              <div class="sim-card">
+                <div class="sim-card-badge text-high">T1547.001 - HIGH SEVERITY</div>
+                <h3>Registry Run Key Persistence</h3>
+                <p>Simulates unauthorized modification of Windows Run registry key to survive system reboots.</p>
+                <div class="sim-code-preview mono">HKLM\...\Run\TelemetryHost &rarr; win_telemetry_svc.exe</div>
+                <button class="btn btn-primary btn-block" onclick="runSimulation('persistence')">
+                  <span>Simulate Persistence</span>
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 6: THREAT-INTEL SCANNER ==================== -->
+        <section data-panel="urlscan" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Threat-Intel & URL/IOC Scanner</h1>
+              <p class="panel-subtitle">Heuristic scoring engine analyzing domain reputation, punycode lookalikes, raw IP access, and phishing indicators.</p>
+            </div>
+          </div>
+
+          <div class="scanner-card">
+            <form id="urlForm" class="scanner-input-bar">
+              <input id="urlIn" placeholder="Enter URL, domain or IP (e.g. evil-login.example, 185.220.101.5)" aria-label="URL or domain" required spellcheck="false">
+              <button type="submit" class="btn btn-primary">
+                <span>Analyze IOC</span>
+              </button>
+            </form>
+
+            <div class="scanner-quick-samples">
+              <span class="samples-label">Test Samples:</span>
+              <button type="button" class="sample-chip" onclick="checkSample('c2-beacon.darknet-node.example')">c2-beacon.darknet-node.example</button>
+              <button type="button" class="sample-chip" onclick="checkSample('evil-login.example/verify-account')">evil-login.example</button>
+              <button type="button" class="sample-chip" onclick="checkSample('http://192.168.1.100/login.php')">Raw IP + HTTP</button>
+              <button type="button" class="sample-chip" onclick="checkSample('https://microsoft.com')">Clean Domain</button>
+            </div>
+
+            <div id="urlOut" class="scan-result-container">
+              <div class="scan-placeholder">
+                <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                <p>Enter any URL or hostname above to inspect heuristic indicators, domain structure, and threat-intel blocklist hits.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ==================== TAB 7: DETECTION RULES ==================== -->
+        <section data-panel="rules" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Detection Rules Engine</h1>
+              <p class="panel-subtitle">Manage Sigma, YARA, IOC signatures, and behavioral heuristic rules active in the engine.</p>
+            </div>
+            <div class="header-actions">
+              <button class="btn btn-primary" onclick="openCreateRuleModal()">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span>Add Custom Rule</span>
+              </button>
+            </div>
+          </div>
+          <div id="rules" class="rules-grid"></div>
+        </section>
+
+        <!-- ==================== TAB 8: AUDIT LOG ==================== -->
+        <section data-panel="audit" hidden>
+          <div class="panel-header">
+            <div>
+              <h1 class="panel-title">Security Operations Audit Log</h1>
+              <p class="panel-subtitle">Immutable audit trail of analyst actions, device quarantines, rule modifications, and detections.</p>
+            </div>
+          </div>
+          <div id="audit" class="audit-list mono"></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- INVESTIGATION MODAL (INCIDENT DEEP DIVE) -->
+  <div id="investigateModal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-badge" id="modalSeverity">CRITICAL</span>
+          <h2 id="modalTitle">Incident Investigation</h2>
+        </div>
+        <button class="btn-close" onclick="closeModal()">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <div class="modal-meta-grid">
+          <div><span class="text-muted">Target Host:</span> <strong id="modalHost">WIN-0142</strong></div>
+          <div><span class="text-muted">MITRE Technique:</span> <strong id="modalMitre" class="text-cyan">T1059.001</strong></div>
+          <div><span class="text-muted">Detection Type:</span> <strong id="modalType">Sigma Rule</strong></div>
+          <div><span class="text-muted">Detected At:</span> <strong id="modalTime">--</strong></div>
+        </div>
+
+        <div class="modal-section">
+          <h4>Rule Description & Playbook</h4>
+          <p id="modalDesc" class="modal-desc"></p>
+        </div>
+
+        <!-- PROCESS LINEAGE INSPECTOR -->
+        <div class="modal-section" id="modalProcessTreeSection">
+          <h4>Process Lineage & Execution Tree</h4>
+          <div id="modalProcessTree" class="process-tree mono"></div>
+        </div>
+
+        <!-- RAW TELEMETRY JSON EVIDENCE -->
+        <div class="modal-section">
+          <div class="evidence-header">
+            <h4>Raw Telemetry Payload Evidence</h4>
+            <button class="btn btn-xs btn-outline" onclick="copyEvidence()">Copy JSON</button>
+          </div>
+          <pre id="modalEvidence" class="evidence-box mono"></pre>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="modalIsolateBtn" class="btn btn-danger">Quarantine Host</button>
+        <button id="modalResolveBtn" class="btn btn-primary">Resolve Incident</button>
+        <button class="btn btn-secondary" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE RULE MODAL -->
+  <div id="createRuleModal" class="modal-backdrop" hidden>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>Create Custom Detection Rule</h2>
+        <button class="btn-close" onclick="closeCreateRuleModal()">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <form id="createRuleForm" class="modal-body">
+        <div class="form-group">
+          <label>Rule Name</label>
+          <input id="newRuleName" placeholder="e.g. Detect certutil downloading executable" required>
+        </div>
+        <div class="inject-grid">
+          <div class="form-group">
+            <label>Rule Type</label>
+            <select id="newRuleType" class="form-select">
+              <option value="Sigma">Sigma Heuristic</option>
+              <option value="IOC">IOC Signature</option>
+              <option value="Behavior">Behavioral</option>
+              <option value="YARA">YARA Rule</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Severity</label>
+            <select id="newRuleSev" class="form-select">
+              <option value="critical">Critical</option>
+              <option value="high" selected>High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>MITRE ATT&CK Tag</label>
+            <input id="newRuleMitre" value="T1105" required>
+          </div>
+          <div class="form-group">
+            <label>Detection Regex Pattern</label>
+            <input id="newRulePattern" placeholder="e.g. certutil|bitsadmin|curl" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Description & Remediation Guidance</label>
+          <textarea id="newRuleDesc" rows="2" class="form-textarea" placeholder="Explanation of the threat vector and standard response..."></textarea>
+        </div>
+        <div class="modal-footer" style="padding: 16px 0 0;">
+          <button type="submit" class="btn btn-primary">Deploy Rule to Engine</button>
+          <button type="button" class="btn btn-secondary" onclick="closeCreateRuleModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
